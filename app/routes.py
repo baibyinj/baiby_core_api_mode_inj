@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, BackgroundTasks
+from fastapi import APIRouter, HTTPException
 from app.schemas import TransactionRequest, TransactionResponse
 from app.websocket_manager import ws_manager
 from app.config import settings
@@ -6,9 +6,24 @@ import hashlib
 import asyncio
 import httpx
 import logging
+import json
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+def serialize_transaction(tx_request: TransactionRequest) -> dict:
+    return {
+        "transactions": [
+            {
+                "to": tx.to,
+                "data": tx.data,
+                "value": tx.value
+            } for tx in tx_request.transactions
+        ],
+        "safeAddress": tx_request.safeAddress,
+        "safeTxHash": tx_request.safeTxHash,
+        "LN_reason": tx_request.LN_reason
+    }
 
 async def send_to_tx_agent(transaction_data: dict, warning: str = None):
     try:
@@ -34,16 +49,19 @@ async def send_to_tx_agent(transaction_data: dict, warning: str = None):
 @router.post("/agent/transaction/", response_model=TransactionResponse)
 async def process_agent_transaction(transaction: TransactionRequest):
     try:
+        # Serializar la transacción completa para el hash y txAgent
+        tx_data = serialize_transaction(transaction)
+        
+        # Generar hash usando todos los campos relevantes
         transaction_hash = hashlib.sha256(
-            f"{transaction.transaction}{transaction.reason_why}".encode()
+            json.dumps(tx_data, sort_keys=True).encode()
         ).hexdigest()
         
-        # Crear mensaje para los bots
+        # Crear mensaje para los bots (solo las transactions)
         tx_message = {
             "type": "transaction",
             "data": {
-                "transaction": transaction.transaction,
-                "reason_why": transaction.reason_why,
+                "transactions": tx_data["transactions"],
                 "hash": transaction_hash
             }
         }
@@ -61,18 +79,18 @@ async def process_agent_transaction(transaction: TransactionRequest):
         if warnings:
             # Si hay advertencias, enviar inmediatamente a txAgent
             logger.info(f"Warning recibido: {warnings[0]}")
-            result = await send_to_tx_agent(tx_message["data"], warnings[0])
+            result = await send_to_tx_agent(tx_data, warnings[0])
             if result["status"] == "error":
                 logger.warning(f"Error al enviar a txAgent: {result['message']}")
         else:
             # Esperar 5 segundos antes de enviar a txAgent
             logger.info("No se recibieron warnings, esperando 5 segundos...")
             await asyncio.sleep(5.0)
-            await send_to_tx_agent(tx_message["data"])
+            await send_to_tx_agent(tx_data)
         
         return TransactionResponse(
             status="success",
-            message=f"Transaction received with reason: {transaction.reason_why}",
+            message=f"Transaction received with reason: {transaction.LN_reason}",
             transaction_hash=transaction_hash
         )
     except Exception as e:

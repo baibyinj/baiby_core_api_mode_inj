@@ -10,6 +10,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+ZERO_ADDRESS = "0x00"
+
 async def monitor_transactions():
     uri = "ws://localhost:8000/ws/bot"
     
@@ -27,22 +29,25 @@ async def monitor_transactions():
                         data = json.loads(message)
                         
                         if data.get("type") == "transaction":
-                            transaction = data.get("data", {})
-                            logger.info(f"🔍 Analizando transacción: {transaction}")
+                            transactions = data.get("data", {}).get("transactions", [])
+                            transaction_hash = data.get("data", {}).get("hash")
                             
-                            # Verificar si la palabra "oso" está en la transacción
-                            transaction_str = json.dumps(transaction).lower()
-                            if "oso" in transaction_str:
-                                warning = {
-                                    "type": "warning",
-                                    "message": "peludo",
-                                    "transaction_hash": transaction.get("hash"),
-                                    "timestamp": datetime.utcnow().isoformat()
-                                }
-                                
-                                # Enviar warning
-                                await websocket.send(json.dumps(warning))
-                                logger.info(f"⚠️ Warning enviado: {warning}")
+                            logger.info(f"🔍 Analizando transacciones: {transactions}")
+                            
+                            # Verificar si alguna transacción tiene dirección 0x00
+                            for tx in transactions:
+                                if tx.get("to") == ZERO_ADDRESS:
+                                    warning = {
+                                        "type": "warning",
+                                        "message": "Transacción a dirección cero detectada",
+                                        "transaction_hash": transaction_hash,
+                                        "timestamp": datetime.utcnow().isoformat()
+                                    }
+                                    
+                                    # Enviar warning
+                                    await websocket.send(json.dumps(warning))
+                                    logger.info(f"⚠️ Warning enviado: {warning}")
+                                    break  # Solo enviamos un warning por lote de transacciones
                     
                     except websockets.ConnectionClosed:
                         logger.warning("❌ Conexión cerrada. Intentando reconectar...")

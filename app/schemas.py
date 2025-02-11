@@ -1,4 +1,5 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from typing import List
 
 class ItemBase(BaseModel):
     name: str
@@ -8,9 +9,16 @@ class ItemBase(BaseModel):
 class Item(ItemBase):
     id: int 
 
+class Transaction(BaseModel):
+    to: str
+    data: str
+    value: str
+
 class TransactionRequest(BaseModel):
-    transaction: str  # La transacción en formato hex
-    reason_why: str  # La razón proporcionada por el agente
+    transactions: List[Transaction]
+    safeAddress: str
+    safeTxHash: str
+    LN_reason: str
 
 class TransactionResponse(BaseModel):
     status: str
