@@ -7,3 +7,12 @@ class ItemBase(BaseModel):
 
 class Item(ItemBase):
     id: int 
+
+class TransactionRequest(BaseModel):
+    transaction: str  # La transacción en formato hex
+    reason_why: str  # La razón proporcionada por el agente
+
+class TransactionResponse(BaseModel):
+    status: str
+    message: str
+    transaction_hash: str 
