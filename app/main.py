@@ -1,7 +1,13 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from app.routes import router
 from app.config import settings
+from app.websocket_manager import ws_manager
+import logging
+import asyncio
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -16,6 +22,26 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.websocket("/ws/bot")
+async def websocket_endpoint(websocket: WebSocket):
+    try:
+        logger.info("⚡ Nueva conexión WebSocket intentando conectar")
+        await ws_manager.connect(websocket)
+        logger.info("✅ WebSocket conectado exitosamente")
+        
+        while True:
+            try:
+                # Solo mantener la conexión viva
+                await asyncio.sleep(1)
+            except Exception as e:
+                logger.error(f"Error en websocket loop: {e}")
+                break
+                
+    except Exception as e:
+        logger.error(f"❌ Error en websocket_endpoint: {e}")
+    finally:
+        await ws_manager.disconnect(websocket)
 
 # Incluir rutas
 app.include_router(router)
