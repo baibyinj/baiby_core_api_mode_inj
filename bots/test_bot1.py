@@ -39,7 +39,7 @@ async def monitor_transactions():
                                 if tx.get("to") == ZERO_ADDRESS:
                                     warning = {
                                         "type": "warning",
-                                        "message": "Transacción a dirección cero detectada",
+                                        "message": "Transacción a dirección cero detectada {ZERO_ADDRESS}",
                                         "transaction_hash": transaction_hash,
                                         "timestamp": datetime.utcnow().isoformat()
                                     }

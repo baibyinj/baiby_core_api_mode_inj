@@ -33,7 +33,10 @@ async def send_to_tx_agent(transaction_data: dict, warning: str = None):
     try:
         async with httpx.AsyncClient() as client:
             data = {
-                "transaction": transaction_data,
+                "safeAddress": transaction_data["safeAddress"],
+                "safeTxHash": transaction_data["safeTxHash"],
+                "LN_reason": transaction_data["LN_reason"],
+                "transactions": transaction_data["transactions"],
                 "warning": warning
             }
             logger.info(f"Enviando a txAgent: {data}")
