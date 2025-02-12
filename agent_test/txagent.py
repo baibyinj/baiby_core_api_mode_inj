@@ -5,6 +5,7 @@ import uvicorn
 import logging
 from supabase import create_client, Client
 from datetime import datetime
+import asyncio
 
 # Configuración de logging
 logging.basicConfig(level=logging.INFO)
@@ -35,15 +36,30 @@ async def process_transaction(data: TransactionRequest):
         logger.info(f"Transacción recibida: {data}")
         
         if data.warning:
-            # Insertar en Supabase
             try:
-                result = supabase.table("live_chat").upsert({
+                # Primer insert
+                logger.info("Realizando primer insert...")
+                result1 = supabase.table("live_chat").insert({
+                    "owner": "your_bot",
                     "wallet": data.safeAddress,
-                    "messages": f"{data.warning} {data.LN_reason}",
+                    "messages": f"i want to send  this TX:{data.transactions} because {data.LN_reason}",
                     "timestamp": datetime.utcnow().isoformat()
                 }).execute()
+                logger.info(f"Primer insert completado: {result1}")
+
+                # Esperar 2 segundos
+                await asyncio.sleep(3)
+
+                # Segundo insert
+                logger.info("Realizando segundo insert...")
+                result2 = supabase.table("live_chat").insert({
+                    "owner": "bAIbysitter",
+                    "wallet": data.safeAddress,
+                    "messages": f"i will analithis is the warning: {data.warning}",
+                    "timestamp": datetime.utcnow().isoformat()
+                }).execute()
+                logger.info(f"Segundo insert completado: {result2}")
                 
-                logger.info(f"Warning guardado en Supabase: {result}")
             except Exception as e:
                 logger.error(f"Error al guardar en Supabase: {e}")
                 raise HTTPException(
@@ -65,5 +81,6 @@ async def process_transaction(data: TransactionRequest):
             status_code=500,
             detail=f"Error processing transaction: {str(e)}"
         )
+
 if __name__ == "__main__":
-    uvicorn.run("txagent:app", host="0.0.0.0", port=8001, reload=True)
+    uvicorn.run(app, host="0.0.0.0", port=8001, reload=True)
