@@ -32,10 +32,11 @@ async def websocket_endpoint(websocket: WebSocket):
         
         while True:
             try:
-                # Solo mantener la conexión viva
-                await asyncio.sleep(1)
+                message = await websocket.receive_json()
+                if message.get("type") == "warning":
+                    await ws_manager.process_warning(message)
             except Exception as e:
-                logger.error(f"Error en websocket loop: {e}")
+                logger.error(f"Error procesando mensaje: {e}")
                 break
                 
     except Exception as e:

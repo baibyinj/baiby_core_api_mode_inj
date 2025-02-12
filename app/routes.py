@@ -7,9 +7,13 @@ import asyncio
 import httpx
 import logging
 import json
+from typing import Dict
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+# Diccionario para mantener el seguimiento de las transacciones activas
+active_transactions: Dict[str, asyncio.Event] = {}
 
 def serialize_transaction(tx_request: TransactionRequest) -> dict:
     return {
@@ -46,6 +50,35 @@ async def send_to_tx_agent(transaction_data: dict, warning: str = None):
         logger.error(f"Error al enviar a txAgent: {str(e)}")
         return {"status": "error", "message": str(e)}
 
+async def process_transaction_with_timeout(tx_data: dict, transaction_hash: str):
+    try:
+        # Crear un evento para esta transacción
+        event = asyncio.Event()
+        active_transactions[transaction_hash] = event
+        
+        # Esperar por 5 segundos o hasta que llegue un warning
+        try:
+            logger.info(f"Esperando warnings para {transaction_hash}...")
+            await asyncio.wait_for(event.wait(), timeout=5.0)
+            warning = ws_manager.get_warning(transaction_hash)
+            
+            if warning:
+                logger.info(f"Warning recibido para {transaction_hash}: {warning}")
+                await send_to_tx_agent(tx_data, warning)
+            else:
+                logger.info(f"No se recibió warning para {transaction_hash}, esperando 5 segundos adicionales...")
+                await asyncio.sleep(5.0)
+                await send_to_tx_agent(tx_data)
+        except asyncio.TimeoutError:
+            logger.info(f"Timeout alcanzado para {transaction_hash}, esperando 5 segundos adicionales...")
+            await asyncio.sleep(5.0)
+            await send_to_tx_agent(tx_data)
+            
+    finally:
+        # Limpiar recursos
+        active_transactions.pop(transaction_hash, None)
+        ws_manager.clear_warning(transaction_hash)
+
 @router.post("/agent/transaction/", response_model=TransactionResponse)
 async def process_agent_transaction(transaction: TransactionRequest):
     try:
@@ -72,21 +105,8 @@ async def process_agent_transaction(transaction: TransactionRequest):
         await ws_manager.broadcast(tx_message)
         logger.info("Broadcast completado")
         
-        # Esperar respuestas durante 5 segundos
-        logger.info("Esperando warnings...")
-        warnings = await ws_manager.receive_warnings(timeout=5.0)
-        
-        if warnings:
-            # Si hay advertencias, enviar inmediatamente a txAgent
-            logger.info(f"Warning recibido: {warnings[0]}")
-            result = await send_to_tx_agent(tx_data, warnings[0])
-            if result["status"] == "error":
-                logger.warning(f"Error al enviar a txAgent: {result['message']}")
-        else:
-            # Esperar 5 segundos antes de enviar a txAgent
-            logger.info("No se recibieron warnings, esperando 5 segundos...")
-            await asyncio.sleep(5.0)
-            await send_to_tx_agent(tx_data)
+        # Procesar la transacción en background
+        asyncio.create_task(process_transaction_with_timeout(tx_data, transaction_hash))
         
         return TransactionResponse(
             status="success",

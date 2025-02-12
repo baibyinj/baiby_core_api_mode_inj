@@ -2,7 +2,6 @@ from fastapi import WebSocket
 from typing import List, Dict
 import json
 import asyncio
-from collections import defaultdict
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -11,18 +10,16 @@ logger = logging.getLogger(__name__)
 class WebSocketManager:
     def __init__(self):
         self.active_connections: List[WebSocket] = []
-        self.message_queues: Dict[str, asyncio.Queue] = defaultdict(asyncio.Queue)
+        self.warnings: Dict[str, str] = {}  # hash -> warning message
 
     async def connect(self, websocket: WebSocket):
         await websocket.accept()
         self.active_connections.append(websocket)
-        self.message_queues[id(websocket)] = asyncio.Queue()
         logger.info(f"Nueva conexión WebSocket. Total conexiones: {len(self.active_connections)}")
 
     async def disconnect(self, websocket: WebSocket):
         if websocket in self.active_connections:
             self.active_connections.remove(websocket)
-            self.message_queues.pop(id(websocket), None)
             logger.info(f"WebSocket desconectado. Conexiones restantes: {len(self.active_connections)}")
 
     async def broadcast(self, message: dict):
@@ -41,39 +38,20 @@ class WebSocketManager:
         for conn in disconnected:
             await self.disconnect(conn)
 
-    async def receive_warnings(self, timeout: int = 5):
-        warnings = []
-        logger.info("Esperando warnings...")
-        
-        try:
-            end_time = asyncio.get_event_loop().time() + timeout
-            
-            while asyncio.get_event_loop().time() < end_time:
-                for connection in self.active_connections:
-                    try:
-                        # Usar un timeout corto para cada intento de recepción
-                        message = await asyncio.wait_for(
-                            connection.receive_json(),
-                            timeout=0.1
-                        )
-                        
-                        logger.info(f"Mensaje recibido: {message}")
-                        
-                        if message.get("type") == "warning":
-                            warnings.append(message["message"])
-                            return warnings  # Retornar inmediatamente si hay warning
-                            
-                    except asyncio.TimeoutError:
-                        continue
-                    except Exception as e:
-                        logger.error(f"Error recibiendo mensaje: {e}")
-                        continue
-                
-                await asyncio.sleep(0.1)  # Pequeña pausa entre ciclos
-                
-        except Exception as e:
-            logger.error(f"Error en receive_warnings: {e}")
-        
-        return warnings
+    async def process_warning(self, warning_data: dict):
+        tx_hash = warning_data.get("transaction_hash")
+        if tx_hash:
+            self.warnings[tx_hash] = warning_data.get("message")
+            # Notificar a la transacción que está esperando
+            from app.routes import active_transactions
+            event = active_transactions.get(tx_hash)
+            if event:
+                event.set()
+
+    def get_warning(self, tx_hash: str) -> str:
+        return self.warnings.get(tx_hash)
+
+    def clear_warning(self, tx_hash: str):
+        self.warnings.pop(tx_hash, None)
 
 ws_manager = WebSocketManager() 
