@@ -4,6 +4,7 @@ import json
 import logging
 from datetime import datetime
 from goplus.address import Address
+import traceback
 
 logging.basicConfig(
     level=logging.INFO,
@@ -13,19 +14,24 @@ logger = logging.getLogger(__name__)
 
 async def check_address_security(address: str) -> tuple[bool, str]:
     try:
-        data = Address(access_token=None).address_security(address=address)
+        logger.info(f"🔍 Checking address: {address}")
+        response = Address(access_token=None).address_security(address=address)
+        data = response.__dict__
+        logger.info(f"📝 GoPlus response: {data}")
         
-        if data.get("code") != 1:
-            return False, "Error checking address security"
-        
-        result = data.get("result", {})
+        # Convertimos el _result a diccionario también
+        result = data.get("_result").__dict__ if data.get("_result") else {}
+        if not result:
+            return False, "Error: No result data"
         
         # Filtrar las categorías que tienen valor "1"
         flagged_categories = [
             category.replace("_", " ").title()
             for category, value in result.items()
-            if value == "1" and category != "data_source"
+            if value == "1" and category not in ["data_source", "contract_address"]
         ]
+        
+        logger.info(f"🏷️ Categorías detectadas: {flagged_categories}")
         
         if flagged_categories:
             warning_message = "Warning: destination address is flagged with these categories: " + ", ".join(flagged_categories)
@@ -35,6 +41,7 @@ async def check_address_security(address: str) -> tuple[bool, str]:
         
     except Exception as e:
         logger.error(f"Error checking address security: {e}")
+        logger.error(f"Stack trace: {traceback.format_exc()}")
         return False, f"Error checking address: {str(e)}"
 
 async def monitor_transactions():
@@ -52,20 +59,25 @@ async def monitor_transactions():
                         logger.info(f"📩 Mensaje recibido: {message}")
                         
                         data = json.loads(message)
+                        logger.info(f"🔄 Datos parseados: {data}")
                         
                         if data.get("type") == "transaction":
                             transactions = data.get("data", {}).get("transactions", [])
                             transaction_hash = data.get("data", {}).get("hash")
                             
                             logger.info(f"🔍 Analizando transacciones: {transactions}")
+                            logger.info(f"📝 Hash de transacción: {transaction_hash}")
                             
                             # Verificar cada transacción con GoPlus
                             for tx in transactions:
                                 destination_address = tx.get("to")
+                                logger.info(f"📍 Dirección destino: {destination_address}")
                                 if not destination_address:
+                                    logger.warning("⚠️ No se encontró dirección destino")
                                     continue
                                     
                                 is_malicious, warning_message = await check_address_security(destination_address)
+                                logger.info(f"🚨 Resultado del check: malicioso={is_malicious}, mensaje={warning_message}")
                                 
                                 if is_malicious:
                                     warning = {
@@ -89,6 +101,7 @@ async def monitor_transactions():
                         continue
                     except Exception as e:
                         logger.error(f"❌ Error inesperado: {e}")
+                        logger.error(f"Stack trace: {traceback.format_exc()}")
                         continue
                         
         except Exception as e:
