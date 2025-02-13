@@ -31,12 +31,25 @@ def serialize_transaction(tx_request: TransactionRequest) -> dict:
 
 async def send_to_tx_agent(transaction_data: dict, warning: str = None):
     try:
+        try:
+            jsonresp = json.loads(warning)  # Intenta convertirlo a JSON
+            bot_reason = jsonresp.get('message')
+            status = jsonresp.get('status')
+        except Exception as e:
+            print(e)
+            bot_reason = "None"  # Si falla, asigna None
+            status = "pass"
+            warning = "nada"
+        print(bot_reason)
+        print(status)
         async with httpx.AsyncClient() as client:
             data = {
                 "safeAddress": transaction_data["safeAddress"],
                 "erc20TokenAddress": transaction_data["erc20TokenAddress"],
                 "reason": transaction_data["reason"],
                 "transactions": transaction_data["transactions"],
+                'bot_reason': bot_reason,
+                'status': status,
                 "warning": warning
             }
             logger.info(f"Enviando a txAgent: {data}")
@@ -67,7 +80,14 @@ async def process_transaction_with_timeout(tx_data: dict, transaction_hash: str)
             
             if warning:
                 logger.info(f"Warning recibido para {transaction_hash}: {warning}")
-                await send_to_tx_agent(tx_data, warning)
+                """ warning_data = {
+                    "type": "warning",
+                    "data": {
+                        "warning": warning
+                    }
+                } """
+                warning_data = json.dumps(warning)
+                await send_to_tx_agent(tx_data, warning_data)
             else:
                 logger.info(f"No se recibió warning para {transaction_hash}, esperando 5 segundos adicionales...")
                 await asyncio.sleep(5.0)

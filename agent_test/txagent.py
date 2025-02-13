@@ -29,7 +29,8 @@ class TransactionRequest(BaseModel):
     reason: str
     transactions: List[Transaction]
     warning: Optional[str] = None
-
+    bot_reason: Optional[str] = None
+    status: Optional[str] = None
 @app.post("/process")
 async def process_transaction(data: TransactionRequest):
     try:
@@ -55,7 +56,7 @@ async def process_transaction(data: TransactionRequest):
                 result2 = supabase.table("live_chat").insert({
                     "owner": "bAIbysitter",
                     "wallet": data.safeAddress,
-                    "messages": f"i will analithis is the warning: {data.warning}",
+                    "messages": f"danger {data.status}: {data.bot_reason}",
                     "timestamp": datetime.utcnow().isoformat()
                 }).execute()
                 logger.info(f"Segundo insert completado: {result2}")

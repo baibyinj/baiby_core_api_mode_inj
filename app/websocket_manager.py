@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 class WebSocketManager:
     def __init__(self):
         self.active_connections: List[WebSocket] = []
-        self.warnings: Dict[str, str] = {}  # hash -> warning message
+        self.warnings: Dict[str, dict] = {}  # hash -> warning data
 
     async def connect(self, websocket: WebSocket):
         await websocket.accept()
@@ -41,14 +41,14 @@ class WebSocketManager:
     async def process_warning(self, warning_data: dict):
         tx_hash = warning_data.get("transaction_hash")
         if tx_hash:
-            self.warnings[tx_hash] = warning_data.get("message")
+            self.warnings[tx_hash] = warning_data
             # Notificar a la transacción que está esperando
             from app.routes import active_transactions
             event = active_transactions.get(tx_hash)
             if event:
                 event.set()
 
-    def get_warning(self, tx_hash: str) -> str:
+    def get_warning(self, tx_hash: str) -> dict:
         return self.warnings.get(tx_hash)
 
     def clear_warning(self, tx_hash: str):
