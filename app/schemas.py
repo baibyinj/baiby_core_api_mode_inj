@@ -17,8 +17,8 @@ class Transaction(BaseModel):
 class TransactionRequest(BaseModel):
     transactions: List[Transaction]
     safeAddress: str
-    safeTxHash: str
-    LN_reason: str
+    erc20TokenAddress: str
+    reason: str
 
 class TransactionResponse(BaseModel):
     status: str

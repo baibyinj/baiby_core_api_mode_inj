@@ -25,8 +25,8 @@ class Transaction(BaseModel):
 
 class TransactionRequest(BaseModel):
     safeAddress: str
-    safeTxHash: str
-    LN_reason: str
+    erc20TokenAddress: str
+    reason: str
     transactions: List[Transaction]
     warning: Optional[str] = None
 
@@ -42,7 +42,7 @@ async def process_transaction(data: TransactionRequest):
                 result1 = supabase.table("live_chat").insert({
                     "owner": "your_bot",
                     "wallet": data.safeAddress,
-                    "messages": f"i want to send  this TX:{data.transactions} because {data.LN_reason}",
+                    "messages": f"i want to send  this TX:{data.transactions} because {data.reason}",
                     "timestamp": datetime.utcnow().isoformat()
                 }).execute()
                 logger.info(f"Primer insert completado: {result1}")

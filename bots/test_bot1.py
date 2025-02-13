@@ -41,6 +41,7 @@ async def monitor_transactions():
                                         "type": "warning",
                                         "message": "Transacción a dirección cero detectada {ZERO_ADDRESS}",
                                         "transaction_hash": transaction_hash,
+                                        'status': "warning",
                                         "timestamp": datetime.utcnow().isoformat()
                                     }
                                     

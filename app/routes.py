@@ -25,8 +25,8 @@ def serialize_transaction(tx_request: TransactionRequest) -> dict:
             } for tx in tx_request.transactions
         ],
         "safeAddress": tx_request.safeAddress,
-        "safeTxHash": tx_request.safeTxHash,
-        "LN_reason": tx_request.LN_reason
+        "erc20TokenAddress": tx_request.erc20TokenAddress,
+        "reason": tx_request.reason
     }
 
 async def send_to_tx_agent(transaction_data: dict, warning: str = None):
@@ -34,8 +34,8 @@ async def send_to_tx_agent(transaction_data: dict, warning: str = None):
         async with httpx.AsyncClient() as client:
             data = {
                 "safeAddress": transaction_data["safeAddress"],
-                "safeTxHash": transaction_data["safeTxHash"],
-                "LN_reason": transaction_data["LN_reason"],
+                "erc20TokenAddress": transaction_data["erc20TokenAddress"],
+                "reason": transaction_data["reason"],
                 "transactions": transaction_data["transactions"],
                 "warning": warning
             }
@@ -113,7 +113,7 @@ async def process_agent_transaction(transaction: TransactionRequest):
         
         return TransactionResponse(
             status="success",
-            message=f"Transaction received with reason: {transaction.LN_reason}",
+            message=f"Transaction received with reason: {transaction.reason}",
             transaction_hash=transaction_hash
         )
     except Exception as e:
