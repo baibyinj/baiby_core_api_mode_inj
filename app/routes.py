@@ -118,7 +118,8 @@ async def process_agent_transaction(transaction: TransactionRequest):
             "type": "transaction",
             "data": {
                 "transactions": tx_data["transactions"],
-                "hash": transaction_hash
+                "hash": transaction_hash,
+                "safewallet": tx_data["safeAddress"]
             }
         }
         

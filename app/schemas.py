@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List
+from typing import List, Optional
 
 class ItemBase(BaseModel):
     name: str
@@ -23,4 +23,9 @@ class TransactionRequest(BaseModel):
 class TransactionResponse(BaseModel):
     status: str
     message: str
-    transaction_hash: str 
+    transaction_hash: str
+
+class TxMessage(BaseModel):
+    type: str = "transaction"
+    data: dict
+    safewallet: str 

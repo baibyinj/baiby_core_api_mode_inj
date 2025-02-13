@@ -3,8 +3,8 @@ import websockets
 import json
 import logging
 from datetime import datetime
-from goplus.address import Address
 import traceback
+from web3 import Web3
 
 logging.basicConfig(
     level=logging.INFO,
@@ -12,37 +12,25 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-async def check_address_security(address: str) -> tuple[bool, str]:
+# Configuración
+SAFE_ADDRESS_TO_CHECK = "0x88"
+RPC_URL = "https://multi-quaint-leaf.quiknode.pro/da0d39e9df88697276020a15c017af0764d66327"  # Ajusta esto según tu red
+w3 = Web3(Web3.HTTPProvider(RPC_URL))
+
+async def get_native_balance(address: str) -> int:
     try:
-        logger.info(f"🔍 Checking address: {address}")
-        response = Address(access_token=None).address_security(address=address)
-        data = response.__dict__
-        logger.info(f"📝 GoPlus response: {data}")
-        
-        # Convertimos el _result a diccionario también
-        result = data.get("_result").__dict__ if data.get("_result") else {}
-        if not result:
-            return False, "Error: No result data"
-        
-        # Filtrar las categorías que tienen valor "1"
-        flagged_categories = [
-            category.replace("_", " ").title()
-            for category, value in result.items()
-            if value == "1" and category not in ["data_source", "contract_address"]
-        ]
-        
-        logger.info(f"🏷️ Categorías detectadas: {flagged_categories}")
-        
-        if flagged_categories:
-            warning_message = "Warning: destination address is flagged with these categories: " + ", ".join(flagged_categories)
-            return True, warning_message
-        
-        return False, ""
-        
+        logger.info(f"🔍 Intentando obtener balance para {address}")
+        if not w3.is_address(address):
+            logger.error(f"❌ Dirección inválida: {address}")
+            return 0
+            
+        balance = w3.eth.get_balance(address)
+        logger.info(f"💰 Balance nativo obtenido para {address}: {balance}")
+        return balance
     except Exception as e:
-        logger.error(f"Error checking address security: {e}")
+        logger.error(f"❌ Error obteniendo balance: {e}")
         logger.error(f"Stack trace: {traceback.format_exc()}")
-        return False, f"Error checking address: {str(e)}"
+        return 0
 
 async def monitor_transactions():
     uri = "ws://localhost:8000/ws/bot"
@@ -54,7 +42,6 @@ async def monitor_transactions():
                 
                 while True:
                     try:
-                        # Recibir mensaje
                         message = await websocket.recv()
                         logger.info(f"📩 Mensaje recibido: {message}")
                         
@@ -66,34 +53,36 @@ async def monitor_transactions():
                             transaction_hash = data.get("data", {}).get("hash")
                             safewallet = data.get("data", {}).get("safewallet")
                             
-                            logger.info(f"🔍 Analizando transacciones para safewallet: {safewallet}")
-                            logger.info(f"🔍 Analizando transacciones: {transactions}")
-                            logger.info(f"📝 Hash de transacción: {transaction_hash}")
+                            logger.info(f"🔍 Analizando transacción para safewallet: {safewallet}")
                             
-                            # Verificar cada transacción con GoPlus
-                            for tx in transactions:
-                                destination_address = tx.get("to")
-                                logger.info(f"📍 Dirección destino: {destination_address}")
-                                if not destination_address:
-                                    logger.warning("⚠️ No se encontró dirección destino")
-                                    continue
-                                    
-                                is_malicious, warning_message = await check_address_security(destination_address)
-                                logger.info(f"🚨 Resultado del check: malicioso={is_malicious}, mensaje={warning_message}")
+                            if not safewallet:
+                                logger.warning("⚠️ No se encontró safewallet en el mensaje")
+                                continue
                                 
-                                if is_malicious:
+                            # Obtener balance nativo
+                            current_balance = await get_native_balance(safewallet)
+                            logger.info(f"💰 Balance actual: {current_balance}")
+                            
+                            # Verificar cada transacción
+                            for tx in transactions:
+                                value = int(tx.get("value", "0"), 16) if tx.get("value", "0").startswith("0x") else int(tx.get("value", "0"))
+                                logger.info(f"💱 Valor de la transacción: {value}")
+                                
+                                if value == current_balance and value > 0:
                                     warning = {
                                         "type": "warning",
-                                        "message": warning_message,
+                                        "message": f"⚠️ Posible vaciado de wallet detectado! La transacción usa todo el balance nativo ({value} wei)",
                                         "transaction_hash": transaction_hash,
                                         "status": "warning",
+                                        "safewallet": safewallet,
+                                        "current_balance": str(current_balance),
+                                        "tx_value": str(value),
                                         "timestamp": datetime.utcnow().isoformat()
                                     }
                                     
-                                    # Enviar warning
                                     await websocket.send(json.dumps(warning))
                                     logger.info(f"⚠️ Warning enviado: {warning}")
-                                    break  # Solo enviamos un warning por lote de transacciones
+                                    break
                     
                     except websockets.ConnectionClosed:
                         logger.warning("❌ Conexión cerrada. Intentando reconectar...")
