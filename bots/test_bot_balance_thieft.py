@@ -74,7 +74,7 @@ async def monitor_transactions():
                                 value = int(tx.get("value", "0"), 16) if tx.get("value", "0").startswith("0x") else int(tx.get("value", "0"))
                                 logger.info(f"💱 Valor de la transacción: {value}")
                                 
-                                if value == current_balance and value > 0:
+                                if value > current_balance*0.99 and value > 0:
                                     warning = {
                                         "type": "warning",
                                         "message": f"⚠️ Posible vaciado de wallet detectado! La transacción usa todo el balance nativo ({value} wei)",
