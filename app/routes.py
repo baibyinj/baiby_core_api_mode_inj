@@ -38,7 +38,7 @@ async def send_to_tx_agent(transaction_data: dict, warning: str = None):
         except Exception as e:
             print(e)
             bot_reason = "None"  # Si falla, asigna None
-            status = "pass"
+            status = "approved"
             warning = "nada"
         print(bot_reason)
         print(status)
