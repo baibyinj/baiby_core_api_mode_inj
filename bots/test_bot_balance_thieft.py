@@ -5,6 +5,11 @@ import logging
 from datetime import datetime
 import traceback
 from web3 import Web3
+from dotenv import load_dotenv
+import os
+
+# Cargar variables de entorno
+load_dotenv()
 
 logging.basicConfig(
     level=logging.INFO,
@@ -12,9 +17,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Configuración
-SAFE_ADDRESS_TO_CHECK = "0x88"
-RPC_URL = "https://multi-quaint-leaf.quiknode.pro/da0d39e9df88697276020a15c017af0764d66327"  # Ajusta esto según tu red
+# Configuración desde variables de entorno
+RPC_URL = os.getenv('RPC_URL')
+WS_BOT_URL = os.getenv('WS_BOT_URL', 'ws://localhost:8000/ws/bot')  # URL por defecto como fallback
+
 w3 = Web3(Web3.HTTPProvider(RPC_URL))
 
 async def get_native_balance(address: str) -> int:
@@ -33,12 +39,12 @@ async def get_native_balance(address: str) -> int:
         return 0
 
 async def monitor_transactions():
-    uri = "ws://localhost:8000/ws/bot"
+    uri = WS_BOT_URL
     
     while True:  # Bucle principal para reconexión
         try:
             async with websockets.connect(uri) as websocket:
-                logger.info("✅ Bot conectado al servidor")
+                logger.info(f"✅ Bot conectado al servidor en {uri}")
                 
                 while True:
                     try:

@@ -5,12 +5,20 @@ import logging
 from datetime import datetime
 from goplus.address import Address
 import traceback
+from dotenv import load_dotenv
+import os
+
+# Cargar variables de entorno
+load_dotenv()
 
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# Configuración desde variables de entorno
+WS_BOT_URL = os.getenv('WS_BOT_URL', 'ws://localhost:8000/ws/bot')  # URL por defecto como fallback
 
 async def check_address_security(address: str) -> tuple[bool, str]:
     try:
@@ -45,12 +53,12 @@ async def check_address_security(address: str) -> tuple[bool, str]:
         return False, f"Error checking address: {str(e)}"
 
 async def monitor_transactions():
-    uri = "ws://localhost:8000/ws/bot"
+    uri = WS_BOT_URL
     
     while True:  # Bucle principal para reconexión
         try:
             async with websockets.connect(uri) as websocket:
-                logger.info("✅ Bot conectado al servidor")
+                logger.info(f"✅ Bot conectado al servidor en {uri}")
                 
                 while True:
                     try:
