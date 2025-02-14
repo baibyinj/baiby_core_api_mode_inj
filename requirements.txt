@@ -8,5 +8,6 @@ supabase>=2.0.0
 python-dateutil>=2.8.2 
 supabase
 python-multipart>=0.0.6
-goplus-sdk-py
-
+web3>=6.11.3
+python-dotenv>=1.0.0
+pandas>=2.1.3
