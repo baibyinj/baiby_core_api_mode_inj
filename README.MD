@@ -1,5 +1,10 @@
 # Crypto Transaction Risk Analysis System
 
+#test Features you can test in the live DEMO
+-USE: send a swap transaction on uniswap v3 on arbitrum network
+-USE: send a transaction to a malicious address
+-USE: send a transaction for native token on arbitrum network with 99% of balance
+
 ## Overview
 This system monitors cryptocurrency transactions in real-time and analyzes different risk factors, including:
 
