@@ -11,7 +11,7 @@ def decode_data(calldata):
         # Extraemos el selector de función (primeros 4 bytes)
         function_selector = calldata[:8]
         print(f"Selector de función: 0x{function_selector}")
-        recipient_address = "0x" + calldata[-453:-413]  # Indices correctos en orden
+        recipient_address = "0x" + calldata[-452:-413]  # Indices correctos en orden
 
         print(f"recipient_address: {recipient_address}")
     except Exception as e:
