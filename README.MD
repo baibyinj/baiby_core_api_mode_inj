@@ -9,7 +9,7 @@ This system monitors cryptocurrency transactions in real-time and analyzes diffe
 
 <img width="891" alt="Image" src="https://github.com/user-attachments/assets/61cb7318-b533-46f4-93ee-95b5fbe43b70" />
 
-<img width="891" alt="Image" src="https://github.com/user-attachments/assets/62ce534d-6be0-4633-96ec-166ed01888f0" />
+<img width="811" alt="Image" src="https://github.com/user-attachments/assets/062831b3-61d5-4c31-95ad-cd95e2ca55bb" />
 
 ## Main Components
 
