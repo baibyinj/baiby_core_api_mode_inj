@@ -14,7 +14,7 @@ The system uses a WebSocket-based architecture to monitor transactions and commu
 
 ## System Architecture
 
-<img width="891" alt="Image" src="https://github.com/user-attachments/assets/62ce534d-6be0-4633-96ec-166ed01888f0" />
+<img width="811" alt="Image" src="https://github.com/user-attachments/assets/6e3f16d7-e2ee-4c33-a8f6-3d22e79026ce" />
 
 ## Main Components
 
