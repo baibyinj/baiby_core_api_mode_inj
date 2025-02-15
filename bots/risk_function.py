@@ -90,7 +90,7 @@ def calculate_risk(calldata):
 
     function_selector,recipient_address = decode_data(calldata)
     print(function_selector,recipient_address)
-    if function_selector == "3593564c":
+    if function_selector == "8d80ff0a":
         token = get_token_id_from_address(recipient_address)
         #token = "pepe"  # Cambia por el token deseado, por ejemplo "ethereum"
         try:
