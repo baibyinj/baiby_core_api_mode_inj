@@ -7,9 +7,15 @@ This system monitors cryptocurrency transactions in real-time and analyzes diffe
 - Malicious addresses 
 - Suspicious swap patterns
 
+# Bot System and Agent Alerts Architecture
+
+## Overview
+The system uses a WebSocket-based architecture to monitor transactions and communicate alerts between bots and agents.
+
+## System Architecture
+
 <img width="891" alt="Image" src="https://github.com/user-attachments/assets/61cb7318-b533-46f4-93ee-95b5fbe43b70" />
 
-<img width="811" alt="Image" src="https://github.com/user-attachments/assets/062831b3-61d5-4c31-95ad-cd95e2ca55bb" />
 
 ## Main Components
 
