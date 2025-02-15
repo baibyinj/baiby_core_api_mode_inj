@@ -7,6 +7,10 @@ This system monitors cryptocurrency transactions in real-time and analyzes diffe
 - Malicious addresses 
 - Suspicious swap patterns
 
+<img width="891" alt="Image" src="https://github.com/user-attachments/assets/61cb7318-b533-46f4-93ee-95b5fbe43b70" />
+
+<img width="891" alt="Image" src="https://github.com/user-attachments/assets/62ce534d-6be0-4633-96ec-166ed01888f0" />
+
 ## Main Components
 
 ### Bots
