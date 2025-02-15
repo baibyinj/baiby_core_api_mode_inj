@@ -54,11 +54,13 @@ async def send_to_tx_agent(transaction_data: dict, warning: str = None):
             }
             logger.info(f"Enviando a txAgent: {data}")
             response = await client.post(
-                f"{settings.TX_AGENT_URL}/process", 
+                f"{settings.TX_AGENT_URL}", 
                 json=data,
                 timeout=10.0
             )
+            print(response.json())
             return response.json()
+        
     except httpx.ConnectError:
         logger.error(f"No se pudo conectar a txAgent en {settings.TX_AGENT_URL}")
         return {"status": "error", "message": "txAgent no disponible"}

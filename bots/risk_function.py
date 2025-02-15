@@ -11,7 +11,7 @@ def decode_data(calldata):
         # Extraemos el selector de función (primeros 4 bytes)
         function_selector = calldata[:8]
         print(f"Selector de función: 0x{function_selector}")
-        recipient_address = "0x" + calldata[-453:-412]  # Indices correctos en orden
+        recipient_address = "0x" + calldata[-452:-412]  # Indices correctos en orden
 
         print(f"recipient_address: {recipient_address}")
     except Exception as e:
@@ -19,7 +19,7 @@ def decode_data(calldata):
     return [function_selector,recipient_address]
 
 
-def get_token_id_from_address(recipient_address, platform="polygon-pos"):
+def get_token_id_from_address(recipient_address, platform="arbitrum-one"):
     url = f"https://api.coingecko.com/api/v3/coins/{platform}/contract/{recipient_address}"
     response = requests.get(url)
     #print(response.json())
