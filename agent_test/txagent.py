@@ -12,8 +12,8 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Configuración de Supabase
-SUPABASE_URL = "https://efyeueofosjeljsrtqte.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVmeWV1ZW9mb3NqZWxqc3J0cXRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzkzMjAyMTUsImV4cCI6MjA1NDg5NjIxNX0.qcXx0RHrGDjdxs4HNhzoxSijK5m1H1yD309ccTyn3Jg"
+SUPABASE_URL = ""
+SUPABASE_KEY = ""
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 app = FastAPI(title="TX Agent Service")
