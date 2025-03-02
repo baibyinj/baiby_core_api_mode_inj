@@ -76,6 +76,8 @@ async def process_transaction(data: TransactionRequest):
     try:
         logger.info(f"Transacción recibida: {data}")
         llm_response = "vacio"
+        approval_status = "APPROVED"  # Por defecto
+
         if data.warning:
             try:
                 # Primer insert
@@ -91,13 +93,14 @@ async def process_transaction(data: TransactionRequest):
                 # Si el status es warning, consultar al LLM
                 if data.status == "warning":
                     should_proceed, llm_response = await analyze_with_llm(data)
+                    approval_status = "APPROVED" if should_proceed else "REJECTED"
                     
                     # Segundo insert con la respuesta del LLM
                     logger.info("Realizando segundo insert con análisis LLM...")
                     result2 = supabase.table("live_chat").insert({
                         "owner": "bAIbysitter",
                         "wallet": data.safeAddress,
-                        "messages": f"{'APPROVED' if should_proceed else 'REJECTED'} - LLM Analysis: {llm_response}",
+                        "messages": f"{approval_status} - LLM Analysis: {llm_response}",
                         "timestamp": datetime.utcnow().isoformat()
                     }).execute()
                 else:
@@ -106,7 +109,7 @@ async def process_transaction(data: TransactionRequest):
                     result2 = supabase.table("live_chat").insert({
                         "owner": "bAIbysitter",
                         "wallet": data.safeAddress,
-                        "messages": f"Transaction  {data.status} reason match llm {llm_response}",
+                        "messages": f"Transaction {data.status} reason match llm {llm_response}",
                         "timestamp": datetime.utcnow().isoformat()
                     }).execute()
                 
@@ -119,9 +122,12 @@ async def process_transaction(data: TransactionRequest):
                     detail=f"Error guardando en base de datos: {str(e)}"
                 )
         
+        # Solo una respuesta al final
         return {
             "status": "success",
-            "message": "Transaction processed successfully",
+            "message": f"Transaction {approval_status} - {llm_response}",
+            "approval_status": approval_status,
+            "llm_response": llm_response,
             "data": {
                 "safeAddress": data.safeAddress,
                 "warning": data.warning

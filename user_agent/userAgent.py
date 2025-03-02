@@ -3,6 +3,7 @@ import json
 import os
 import dotenv
 import httpx
+import asyncio
 from multiversx_sdk import Account, DevnetEntrypoint, Transaction, Address, ProxyNetworkProvider
 from multiversx_sdk.wallet import UserSigner
 
@@ -29,11 +30,9 @@ def create_account():
     return account
 
 async def send_transaction_to_api(transaction):
-    # Preparar los datos de la transacción en el formato esperado
     tx_data = {
         "safeAddress": str(transaction.sender),
-        "erc20TokenAddress": "EGLD",  # En este caso es EGLD nativo
-        #"reason": "send some EGLD, because a user requested",  
+        "erc20TokenAddress": "EGLD",
         "reason": "need to transfer all EGLD, to start a new wallet",
         "transactions": [{
             "to": str(transaction.receiver),
@@ -42,33 +41,73 @@ async def send_transaction_to_api(transaction):
         }]
     }
     
-    async with httpx.AsyncClient() as client:
-        response = await client.post(API_URL, json=tx_data)
-        return response.json()
+    max_retries = 3
+    retry_delay = 2
+    
+    for attempt in range(max_retries):
+        try:
+            timeout = httpx.Timeout(30.0, connect=20.0)
+            async with httpx.AsyncClient(timeout=timeout) as client:
+                response = await client.post(API_URL, json=tx_data)
+                response_data = response.json()
+                print(f"Respuesta completa de la API: {response_data}")
+                
+                # Verificar si la transacción está aprobada basándonos en el mensaje
+                message = response_data.get('message', '')
+                is_approved = 'APPROVED' in message
+                print(f"Mensaje de la API: {message}")
+                print(f"¿Está aprobada? {is_approved}")
+                
+                if is_approved:
+                    try:
+                        # Enviar transacción a la blockchain
+                        tx_hash = provider.send_transaction(transaction)
+                        print(f"✅ Transacción aprobada y enviada. Hash: {tx_hash}")
+                    except Exception as e:
+                        print(f"❌ Error al enviar la transacción a la blockchain: {str(e)}")
+                        raise
+                else:
+                    print(f"❌ Transacción rechazada: {message}")
+                
+                return response_data
+                
+        except httpx.ReadTimeout:
+            if attempt < max_retries - 1:
+                print(f"Timeout en intento {attempt + 1}. Reintentando en {retry_delay} segundos...")
+                await asyncio.sleep(retry_delay)
+                retry_delay *= 2
+            else:
+                print("Error: No se pudo conectar después de varios intentos")
+                raise
+        except Exception as e:
+            print(f"Error inesperado: {str(e)}")
+            raise
 
 if __name__ == "__main__":
-    import asyncio
-    
-    # Cargar cuenta
-    account = create_account()
-    
-    # Crear transacción
-    transaction = Transaction(
-        nonce=account.nonce,
-        sender=account.address,
-        receiver=Address.new_from_bech32(RECEIVER_ADDRESS),
-        value=int(AMOUNT * 10**18),
-        gas_limit=GAS_LIMIT,
-        chain_id="T",
-        version=1
-    )
-    
-    # Firmar transacción
-    transaction.signature = account.sign_transaction(transaction)
-    
-    # Enviar a nuestra API primero
-    result = asyncio.run(send_transaction_to_api(transaction))
-    print(f"API Response: {result}")
+    try:
+        # Cargar cuenta
+        account = create_account()
+        
+        # Crear transacción
+        transaction = Transaction(
+            nonce=account.nonce,
+            sender=account.address,
+            receiver=Address.new_from_bech32(RECEIVER_ADDRESS),
+            value=int(AMOUNT * 10**18),
+            gas_limit=GAS_LIMIT,
+            chain_id="T",
+            version=1
+        )
+        
+        # Firmar transacción
+        transaction.signature = account.sign_transaction(transaction)
+        
+        # Enviar a nuestra API primero
+        result = asyncio.run(send_transaction_to_api(transaction))
+        print(f"Respuesta de la API: {result}")
+        
+    except Exception as e:
+        print(f"Error en la ejecución: {str(e)}")
     
     # Si todo está bien, enviar a la blockchain
     #tx_hash = provider.send_transaction(transaction)
