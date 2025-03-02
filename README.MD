@@ -1,10 +1,12 @@
 # bAIbysitter - Intelligent Transaction Guardian
 
-##Overview
+#Overview
 
 bAIbysitter is a decentralized transaction monitoring system that uses AI to protect agents and humans from potentially harmful transactions or money losses. The system comprises three key components working in harmony to ensure transaction safety.
 
 ## Key Components
+
+
 
 ### 1. bAIby Agent (AI Decision Maker)
 
