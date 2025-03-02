@@ -1,6 +1,8 @@
-# bAIbysitter - Intelligent Transaction GuardianOverview
+# bAIbysitter - Intelligent Transaction Guardian
 
-bAIbysitter is a decentralized transaction monitoring system that uses AI to protect MultiversX wallets from potentially harmful transactions. The system comprises three key components working in harmony to ensure transaction safety.
+##Overview
+
+bAIbysitter is a decentralized transaction monitoring system that uses AI to protect agents and humans from potentially harmful transactions or money losses. The system comprises three key components working in harmony to ensure transaction safety.
 
 ## Key Components
 
@@ -66,6 +68,7 @@ SUPABASE_URL=your_supabase_url
 SUPABASE_KEY=your_supabase_key
 OPENAI_API_KEY=your_openai_key
 WS_BOT_URL=ws://localhost:8000/ws/bot
+TX_AGENT_URL=http://localhost:8001/tx_agent
 ```
 
 ### Installation
@@ -115,7 +118,4 @@ python bots/test_bot_balance_multiversx.py
 - Advanced risk scoring
 - User preferences
 
-## License
-
-MIT License - See LICENSE file for details
 
