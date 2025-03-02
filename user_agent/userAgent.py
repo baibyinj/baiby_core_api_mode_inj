@@ -13,8 +13,8 @@ dotenv.load_dotenv()
 PROVIDER_URL = "https://testnet-gateway.multiversx.com"
 API_URL = "http://localhost:8000/agent/transaction/"
 RECEIVER_ADDRESS = "erd1md66ra4tfmpack774z6yfytwwn68azr43utsddv09v785wtqa9wq44kl46"
-#AMOUNT = 0.001
-AMOUNT = 4.99895
+AMOUNT = 0.001
+#AMOUNT = 4.99895
 GAS_LIMIT = 50000
 
 provider = ProxyNetworkProvider(PROVIDER_URL)

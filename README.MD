@@ -1,95 +1,121 @@
-# Crypto Transaction Risk Analysis System
+# bAIbysitter - Intelligent Transaction GuardianOverview
 
-# test Features you can test in the live DEMO
+bAIbysitter is a decentralized transaction monitoring system that uses AI to protect MultiversX wallets from potentially harmful transactions. The system comprises three key components working in harmony to ensure transaction safety.
 
--USE: send a swap transaction on uniswap v3 on arbitrum network
+## Key Components
 
--USE: send a transaction to a malicious address
+### 1. bAIby Agent (AI Decision Maker)
 
--USE: send a transaction for native token on arbitrum network with 99% of balance
+- Powered by GPT-4 for intelligent transaction analysis
+- Processes warnings from monitoring bots
+- Makes final approval/rejection decisions
+- Stores transaction history in Supabase
+- Provides detailed reasoning for each decision
 
-## Overview
-This system monitors cryptocurrency transactions in real-time and analyzes different risk factors, including:
+### 2. Monitoring Bots
 
-- Token volatility
-- Malicious addresses 
-- Suspicious swap patterns
+Currently focused on MultiversX blockchain monitoring:
 
-# Bot System and Agent Alerts Architecture
+- **Balance Monitor:** Detects potential wallet draining attempts
+  - Tracks transactions using >90% of wallet balance
+  - Real-time balance checking
+  - Immediate warning generation for suspicious patterns
 
-## Overview
-The system uses a WebSocket-based architecture to monitor transactions and communicate alerts between bots and agents.
+### 3. Main Application
 
-## System Architecture
+Orchestrates the entire transaction flow:
 
-<img width="811" alt="Image" src="https://github.com/user-attachments/assets/6e3f16d7-e2ee-4c33-a8f6-3d22e79026ce" />
+- Receives incoming transactions
+- Manages WebSocket connections with monitoring bots
+- Coordinates communication between components
+- Handles timeouts and retries
+- Returns final decisions to users
 
-## Main Components
+## Transaction Flow
 
-### Bots
-The system includes several specialized bots:
+1. **Initial Reception:**
 
-- **Risk Bot**: Analyzes token volatility and market metrics
-- **Malicious Address Bot**: Verifies addresses against GoPlus API
-- **Swap Monitor Bot**: Monitors and decodes swap transactions and analyze the risk of the token
+   - Transaction received from MultiversX wallet
+   - Unique hash generated for tracking
+   - Transaction details broadcast to monitoring bots
 
-### Key Features
+2. **Bot Analysis:**
 
-#### Risk Analysis
-- Daily and annual volatility calculation
-- Risk classification in three levels: High, Medium and Low
-- Market cap and volume monitoring
+   - Balance bot checks for draining attempts
+   - Warnings collected via WebSocket
+   - 5-second timeout for bot responses
 
-#### Malicious Address Detection
-- GoPlus Security API integration
-- Multiple risk categories verification
-- Real-time alerts
+3. **AI Processing:**
 
-#### Transaction Decoding
-- Support for swap transactions
-- Calldata decoding
-- Address and parameter extraction
+   - bAIby Agent receives transaction data and warnings
+   - GPT-4 analyzes transaction context and risks
+   - Decision made based on comprehensive analysis
 
-## Setup
+4. **Response Handling:**
 
-### Requirements
-- Python 3.8+
-- WebSocket Server
-- APIs:
-  - CoinGecko
-  - GoPlus Security
+   - Approval/rejection decision returned
+   - Transaction proceeds if approved
+   - Detailed explanation provided for rejections
 
+## Setup Instructions
 
+### Environment Configuration
 
-## How to Test de app
+```
+SUPABASE_URL=your_supabase_url
+SUPABASE_KEY=your_supabase_key
+OPENAI_API_KEY=your_openai_key
+WS_BOT_URL=ws://localhost:8000/ws/bot
+```
 
-### 1. Integration with SafeWallet Module
-First, ensure you have the SafeWallet module properly configured for Arbitrum network:
-### 2. test the Specialized Bots
-#### Risk Analysis Bot
-Monitors token volatility and market risk:
-This bot will:
-- Decode swap transactions
-- Analyze token market data
-- Alert on high volatility tokens
+### Installation
 
-USE: send a swap transaction on uniswap v3 on arbitrum network
+```
+pip install -r requirements.txt
+```
 
+### Running the System
 
-#### Malicious Address Detection
-Checks for suspicious addresses:
-Features:
-- GoPlus Security API integration
-- Real-time address verification
-- Scam detection alerts
+```
+# Start main application
+uvicorn app.main:app --reload
 
-USE: send a transaction to a malicious address
+# Launch bAIby agent
+uvicorn baiby_agent.txagent:app --port 8001
 
-#### Balance Theft Protection
-Monitors for suspicious balance drains:
-Capabilities:
-- Monitors native token balance
-- Detects full balance transfers
-- Alerts on suspicious patterns
+# Start MultiversX monitoring bot
+python bots/test_bot_balance_multiversx.py
+```
 
-USE: send a transaction for native token on arbitrum network with 99% of balance
+## Technical Details
+
+### Stack
+
+- Backend: FastAPI
+- AI: OpenAI GPT-4
+- Database: Supabase
+- Blockchain: MultiversX
+- Real-time: WebSockets
+- HTTP Client: HTTPX
+
+### Security Features
+
+- Real-time transaction monitoring
+- AI-powered risk assessment
+- Comprehensive error logging
+- Transaction audit trail
+- Multiple retry mechanisms
+- Timeout handling
+
+## Future Development
+
+- Additional monitoring bots
+- Enhanced AI capabilities
+- Multi-chain support
+- Advanced risk scoring
+- User preferences
+
+## License
+
+MIT License - See LICENSE file for details
+
