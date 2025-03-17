@@ -52,3 +52,5 @@ coverage.xml
 **/wallet.json
 compose.yaml
 iAgent-master/compose.yaml
+agents_config.yaml
+iAgent-master/agents_config.yaml
