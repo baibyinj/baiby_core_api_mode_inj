@@ -2,9 +2,9 @@ fede:
   address: inj1p9frwu0684ryjr9r6xg43d440vz4mhx4h7lzyg
   created_at: '2025-03-02T12:40:48.436578'
   network: testnet
-  private_key: 6e78f30a7027b2569b897d7adb12eb74fc970b71d504074b1c110c32f81d2ff7
+  private_key: 
 test:
   address: inj1pxshsnqhm6z4sgqxehuzqr9fkdzf4ypgtra56p
   created_at: '2025-03-15T19:45:28.470908'
   network: testnet
-  private_key: e32c52cc894290312eb3a3ceb119b75b9bc444cce93f9362b36bdc66fc76bd08
+  private_key: 
