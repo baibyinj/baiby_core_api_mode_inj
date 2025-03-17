@@ -6,7 +6,7 @@ bAIbysitter is a decentralized transaction monitoring system that uses AI to pro
 
 Architecture
 
-<img width="849" alt="Image" src="https://github.com/user-attachments/assets/f3aebbfa-bfcc-4c8e-b460-c832adb9573b" />
+<img width="907" alt="Image" src="https://github.com/user-attachments/assets/c7856046-75fc-44eb-bcd7-e10256501659" />
 
 ### 1. bAIby Agent (AI Decision Maker)
 
