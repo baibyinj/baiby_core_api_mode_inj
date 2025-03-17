@@ -143,55 +143,6 @@ result = await clients["bank"].transfer_funds(
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# 3. bAIby_core bAIby_agent sentinel_bots
-
-
-## Setup Instructions
-
-### Environment Configuration
-
-```
-SUPABASE_URL=your_supabase_url
-SUPABASE_KEY=your_supabase_key
-OPENAI_API_KEY=your_openai_key
-WS_BOT_URL=ws://localhost:8000/ws/bot
-TX_AGENT_URL=http://localhost:8001/tx_agent
-```
-
 ### Running the System
 
 ```
@@ -204,6 +155,97 @@ uvicorn baiby_agent.txagent:app --port 8001
 # Start injective monitoring bot
 python test_bot_new_address_inj.py
 ```
+
+
+
+
+
+# Bot Detection of First Transaction to a Wallet
+
+/bots/test_bot_new_address_inj.py
+
+### `fetch_account_txs`
+- Queries the transaction history of an address
+- Determines if the account has previous transactions
+
+### `fetch_bank_balances`
+- Checks the current balance of the address
+- Determines if the account has funds
+
+
+
+
+# bAIby_core API
+
+### Environment Configuration
+
+
+
+```
+SUPABASE_URL=your_supabase_url
+SUPABASE_KEY=your_supabase_key
+OPENAI_API_KEY=your_openai_key
+WS_BOT_URL=ws://localhost:8000/ws/bot
+TX_AGENT_URL=http://localhost:8001/tx_agent
+```
+
+## 1. Transaction Reception
+```python
+@router.post("/agent/transaction/", response_model=TransactionResponse)
+async def process_agent_transaction(transaction: TransactionRequest):
+    # Serialize and generate hash
+    tx_data = serialize_transaction(transaction)
+    transaction_hash = hashlib.sha256(
+        json.dumps(tx_data, sort_keys=True).encode()
+    ).hexdigest()
+    
+    # Prepare message for bots
+    tx_message = {
+        "type": "transaction",
+        "data": {
+            "transactions": tx_data["transactions"],
+            "hash": transaction_hash,
+            "safewallet": tx_data["safeAddress"]
+        }
+    }
+```
+
+## 2. Broadcast to Bots and Await Response
+```python
+await ws_manager.broadcast(tx_message)
+tx_agent_response = await process_transaction_with_timeout(
+    tx_data,
+    transaction_hash
+)
+```
+
+## 3. Final Decision and Response
+```python
+return TransactionResponse(
+    status="success",
+    message=f"Transaction {tx_agent_response.get('approval_status', 'PENDING')} - {tx_agent_response.get('llm_response', '')}",
+    transaction_hash=transaction_hash,
+    approval_status=tx_agent_response.get('approval_status', 'PENDING')
+)
+```
+
+## Key Components
+
+### WebSocket Manager
+- Manages connections with bots
+- Distributes transaction information
+- Collects alerts and warnings
+
+### Transaction Processing
+- 5-second timeout for bot responses
+- Parallel analysis
+- Logs transactions in Supabase
+
+### Client Response
+- Transaction status
+- Detailed reasoning
+- Hash for tracking
+
 
 ## Technical Details
 
