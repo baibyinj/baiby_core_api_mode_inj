@@ -47,6 +47,7 @@ bAIbysitter is a new security feature integrated into iAgent that uses AI to val
 ### 1. TransactionBabysitter
 
 ```python
+/iAgent-naster/injective_functions/baibysitter/baibysitter.py
 class TransactionBabysitter(InjectiveBase):
     def __init__(self, chain_client, api_url: str) -> None:
         super().__init__(chain_client)
@@ -71,6 +72,7 @@ class TransactionBabysitter(InjectiveBase):
 ### 2. Integration with InjectiveBank
 
 ```python
+/iAgent-naster/injective_functions/bank/__init__.py
 class InjectiveBank(InjectiveBase):
     def __init__(self, chain_client, api_url: str = None) -> None:
         super().__init__(chain_client)
@@ -175,7 +177,7 @@ result = await clients["bank"].transfer_funds(
 
 
 
-### bAIby_core bAIby_agent sentinel_bots
+# 3. bAIby_core bAIby_agent sentinel_bots
 
 
 ## Setup Instructions
