@@ -35,31 +35,148 @@ Orchestrates the entire transaction flow:
 - Handles timeouts and retries
 - Returns final decisions to users
 
-## Transaction Flow
 
-1. **Initial Reception:**
+# Injective iAgent - bAIbysitter Security plugin integration
 
-   - Transaction received from injective wallet
-   - Unique hash generated for tracking
-   - Transaction details broadcast to monitoring bots
+## Description
 
-2. **Bot Analysis:**
+bAIbysitter is a new security feature integrated into iAgent that uses AI to validate transactions by comparing them with their intended purpose and protect users from potentially risky operations.
 
-   - Balance bot checks for draining attempts
-   - Warnings collected via WebSocket
-   - 5-second timeout for bot responses
+## Main Components
 
-3. **AI Processing:**
+### 1. TransactionBabysitter
 
-   - bAIby Agent receives transaction data and warnings
-   - GPT-4 analyzes transaction context and risks
-   - Decision made based on comprehensive analysis
+```python
+class TransactionBabysitter(InjectiveBase):
+    def __init__(self, chain_client, api_url: str) -> None:
+        super().__init__(chain_client)
+        self.api_url = api_url
 
-4. **Response Handling:**
+    async def safe_transfer(self, amount: Decimal, denom: str, to_address: str, chat_history: list) -> Dict:
+        # AI-based transaction validation
+        validation = await self.validate_with_api(
+            tx_payload=str(msg),
+            chat_history=chat_history,
+            sender=self.chain_client.address.to_acc_bech32(),
+            recipient=to_address,
+            amount=amount,
+            denom=denom
+        )
 
-   - Approval/rejection decision returned
-   - Transaction proceeds if approved
-   - Detailed explanation provided for rejections
+        if validation.get("status") == "success" and "APPROVED" in validation.get("message", ""):
+            return await self.chain_client.build_and_broadcast_tx(msg)
+        return {"success": False, "error": f"Transaction rejected: {validation.get('message')}"}
+```
+
+### 2. Integration with InjectiveBank
+
+```python
+class InjectiveBank(InjectiveBase):
+    def __init__(self, chain_client, api_url: str = None) -> None:
+        super().__init__(chain_client)
+        self.babysitter = TransactionBabysitter(chain_client, api_url) if api_url else None
+
+    async def transfer_funds(self, amount: Decimal, denom: str, to_address: str, chat_history: list = None) -> Dict:
+        if self.babysitter and chat_history is not None:
+            return await self.babysitter.safe_transfer(
+                amount=amount,
+                denom=denom,
+                to_address=to_address,
+                chat_history=chat_history
+            )
+```
+
+## Quick Setup
+
+### Environment Variables
+
+```bash
+TX_AGENT_URL=http://localhost:8001/  # Validation service URL
+```
+
+## Basic Usage
+
+```python
+# Create client with babysitter
+clients = await InjectiveClientFactory.create_all(
+    private_key=private_key,
+    network_type="testnet",
+    api_url="http://localhost:8001/"
+)
+
+# Perform secure transfer
+result = await clients["bank"].transfer_funds(
+    amount=Decimal("0.1"),
+    denom="INJ",
+    to_address="inj1...",
+    chat_history=chat_history
+)
+```
+
+## Key Features
+
+- **Automatic Validation:** Analyzes each transaction before execution.
+- **Smart Context:** Uses chat history to make decisions.
+- **Transparent Integration:** Automatically activates when configured.
+- **Safe Mode:** Rejects suspicious transactions.
+
+## Operation Flow
+
+1. The user requests the agent to make a transaction.
+2. bAIbysitter analyzes the transaction along with the transaction intent based on chat history.
+3. If approved → Executes transfer.
+4. If rejected → Returns an explanatory message.
+
+## Considerations
+
+- Only active when `api_url` and `chat_history` are provided.
+- Currently works exclusively for banking transactions.
+- Adds an extra layer of security without complicating usage.
+
+## Future Improvements
+
+- Support for more transaction types.
+- Customizable validation rules.
+- Integration with other iAgent modules.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+### bAIby_core bAIby_agent sentinel_bots
+
 
 ## Setup Instructions
 
@@ -73,19 +190,13 @@ WS_BOT_URL=ws://localhost:8000/ws/bot
 TX_AGENT_URL=http://localhost:8001/tx_agent
 ```
 
-### Installation
-
-```
-pip install -r requirements.txt
-```
-
 ### Running the System
 
 ```
-# Start main application
+# Start main application bAIby_core
 uvicorn app.main:app --reload
 
-# Launch bAIby agent
+# Launch bAIby_agent
 uvicorn baiby_agent.txagent:app --port 8001
 
 # Start injective monitoring bot
