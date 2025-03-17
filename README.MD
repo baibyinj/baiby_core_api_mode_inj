@@ -89,7 +89,7 @@ uvicorn app.main:app --reload
 uvicorn baiby_agent.txagent:app --port 8001
 
 # Start injective monitoring bot
-python bots/test_bot_balance_injective.py
+python test_bot_new_address_inj.py
 ```
 
 ## Technical Details
