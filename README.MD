@@ -20,9 +20,9 @@ Architecture
 
 Currently focused on injective blockchain monitoring:
 
-- **Balance Monitor:** Detects potential wallet draining attempts
-  - Tracks transactions using >90% of wallet balance
-  - Real-time balance checking
+- **new Wallet transaction:** Detects transactions to a neww wallet
+  - new wallet
+  - first transaction to this wallet
   - Immediate warning generation for suspicious patterns
 
 ### 3. Main Application
