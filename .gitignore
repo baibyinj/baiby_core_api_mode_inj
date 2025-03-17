@@ -50,3 +50,5 @@ htmlcov/
 coverage.xml
 *.cover 
 **/wallet.json
+compose.yaml
+iAgent-master/compose.yaml
