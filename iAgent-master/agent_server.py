@@ -14,6 +14,7 @@ import asyncio
 from hypercorn.config import Config
 from hypercorn.asyncio import serve
 import aiohttp
+from decimal import Decimal
 
 # Initialize Quart app (async version of Flask)
 app = Quart(__name__)
@@ -54,33 +55,49 @@ class InjectiveChatAgent:
         self, agent_id: str, private_key: str, environment: str = "mainnet"
     ) -> None:
         """Initialize Injective clients if they don't exist"""
-        if agent_id not in self.agents:
+        try:
+            print(f"DEBUG - Initializing agent for environment: {environment}")
+            if agent_id in self.agents:
+                print(f"DEBUG - Agent {agent_id} already exists, reinitializing...")
+                del self.agents[agent_id]
+            
             clients = await InjectiveClientFactory.create_all(
-                private_key=private_key, network_type=environment
+                private_key=private_key,
+                network_type=environment
             )
             self.agents[agent_id] = clients
+            print(f"DEBUG - Agent initialized successfully for {environment}")
+        except Exception as e:
+            print(f"DEBUG - Error initializing agent: {str(e)}")
+            raise
 
-    async def execute_function(
-        self, function_name: str, arguments: dict, agent_id: str
-    ) -> dict:
-        """Execute the appropriate Injective function with error handling"""
+    async def execute_function(self, function_name: str, arguments: dict, session_id: str, agent_id: str):
         try:
-            # Get the client dictionary for this agent
-            clients = self.agents.get(agent_id)
-            if not clients:
-                return {
-                    "error": "Agent not initialized. Please provide valid credentials."
-                }
-
-            return await FunctionExecutor.execute_function(
-                clients=clients, function_name=function_name, arguments=arguments
-            )
+            print(f"DEBUG - Executing function: {function_name}")
+            print(f"DEBUG - Arguments: {arguments}")
+            print(f"DEBUG - Agent ID: {agent_id}")
+            
+            if function_name == "transfer_funds":
+                # Obtener el historial de chat de la sesión actual
+                chat_history = self.conversations.get(session_id, [])
+                print(f"DEBUG - Chat history length: {len(chat_history)}")
+                
+                result = await self.agents[agent_id]["bank"].transfer_funds(
+                    amount=Decimal(arguments["amount"]),
+                    denom=arguments.get("denom", "INJ"),
+                    to_address=arguments["to_address"],
+                    chat_history=chat_history
+                )
+                return result
 
         except Exception as e:
+            print(f"DEBUG - Error executing function: {str(e)}")
+            import traceback
+            print(f"DEBUG - Traceback: {traceback.format_exc()}")
             return {
                 "error": str(e),
                 "success": False,
-                "details": {"function": function_name, "arguments": arguments},
+                "details": {"function": function_name, "arguments": arguments}
             }
 
     async def get_response(
@@ -157,7 +174,7 @@ class InjectiveChatAgent:
                 function_args = json.loads(response_message.function_call.arguments)
                 # Execute the function
                 function_response = await self.execute_function(
-                    function_name, function_args, agent_id
+                    function_name, function_args, session_id, agent_id
                 )
 
                 # Add function call and response to conversation
@@ -257,33 +274,37 @@ async def ping():
     )
 
 
+
 @app.route("/chat", methods=["POST"])
 async def chat_endpoint():
     """Main chat endpoint"""
     data = await request.get_json()
+    print("DEBUG - Received request data:", data)  # Debug line
     try:
         if not data or "message" not in data:
+            print("DEBUG - Missing message in request")  # Debug line
             return (
-                jsonify(
-                    {
-                        "error": "No message provided",
-                        "response": "Please provide a message to continue our conversation.",
-                        "session_id": data.get("session_id", "default"),
-                        "agent_id": data.get("agent_id", "default"),
-                        "agent_key": data.get("agent_key", "default"),
-                        "environment": data.get("environment", "testnet"),
+                jsonify({
+                    "error": "No message provided",
+                    "debug_info": {
+                        "received_data": data,
+                        "missing_fields": ["message"] if "message" not in data else []
                     }
-                ),
+                }),
                 400,
             )
 
         session_id = data.get("session_id", "default")
         private_key = data.get("agent_key", "default")
         agent_id = data.get("agent_id", "default")
+        
+        print(f"DEBUG - Processing request: session={session_id}, agent={agent_id}")  # Debug line
+        
         response = await agent.get_response(
             data["message"], session_id, private_key, agent_id
         )
-
+        
+        print("DEBUG - Response generated:", response)  # Debug line
         return jsonify(response)
     except Exception as e:
         return (

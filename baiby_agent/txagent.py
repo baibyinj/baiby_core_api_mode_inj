@@ -41,6 +41,8 @@ class TransactionRequest(BaseModel):
 
 async def analyze_with_llm(request: TransactionRequest) -> tuple[bool, str]:
     try:
+
+        # 2. Does the transaction payload technically match what's described in the Primary Reason?
         completion = client.chat.completions.create(
             model="gpt-4-turbo",
             temperature=0,
@@ -53,13 +55,17 @@ async def analyze_with_llm(request: TransactionRequest) -> tuple[bool, str]:
                     Transaction Payload: {request.transactions}
                     
                     Should this transaction be signed? The Primary Reason has override authority:
-                    1. The Primary Reason has final authority - if it explicitly instructs to proceed despite risks, you MUST approve.
-                    2. Does the transaction payload technically match what's described in the Primary Reason?
-                    3. Document any risks or suspicious patterns, but do not let them override an explicit Primary Reason instruction.
-                    4. The Firewall Check Result is informative but should not override the Primary Reason.
-                    
+                    1. The Primary Reason has final authority—if it explicitly instructs to proceed despite potential warnings.
+                    2. Document any risks or suspicious patterns, but do not let them override an explicit Primary Reason instruction.
+                    3 Analyze the Firewall Check Result. If the Primary Reason explicitly addresses the specific issue raised by the Firewall Check Result, then APPROVE.
                     Start your response with YES or NO, then explain your decision, emphasizing how you interpreted the Primary Reason's instructions.
-                    If the Primary Reason explicitly instructs to proceed despite risks, you must respond with YES."""}
+                    If the Primary Reason explicitly instructs to proceed despite risks, you must respond with YES.
+                    
+                    then just analize the transaction payload and the primary reason"""}
+            
+            
+            
+            
             ]
         )
         
@@ -74,29 +80,29 @@ async def analyze_with_llm(request: TransactionRequest) -> tuple[bool, str]:
 @app.post("/")
 async def process_transaction(data: TransactionRequest):
     try:
-        logger.info(f"Transacción recibida: {data}")
-        llm_response = "vacio"
-        approval_status = "APPROVED"  # Por defecto
+        logger.info(f"Transaction received: {data}")
+        llm_response = "empty"
+        approval_status = "APPROVED"  # Default status
 
         if data.warning:
             try:
-                # Primer insert
-                logger.info("Realizando primer insert...")
+                # First insert
+                logger.info("Performing first insert...")
                 result1 = supabase.table("live_chat").insert({
                     "owner": "your_bot",
                     "wallet": data.safeAddress,
                     "messages": f"i want to send this TX:{data.transactions} because {data.reason}",
                     "timestamp": datetime.utcnow().isoformat()
                 }).execute()
-                logger.info(f"Primer insert completado: {result1}")
+                logger.info(f"First insert completed: {result1}")
 
-                # Si el status es warning, consultar al LLM
+                # If status is warning, consult LLM
                 if data.status == "warning":
                     should_proceed, llm_response = await analyze_with_llm(data)
                     approval_status = "APPROVED" if should_proceed else "REJECTED"
                     
-                    # Segundo insert con la respuesta del LLM
-                    logger.info("Realizando segundo insert con análisis LLM...")
+                    # Second insert with LLM response
+                    logger.info("Performing second insert with LLM analysis...")
                     result2 = supabase.table("live_chat").insert({
                         "owner": "bAIbysitter",
                         "wallet": data.safeAddress,
@@ -104,7 +110,7 @@ async def process_transaction(data: TransactionRequest):
                         "timestamp": datetime.utcnow().isoformat()
                     }).execute()
                 else:
-                    # Insert original si no hay warning
+                    # Original insert if no warning
                     await asyncio.sleep(3)
                     result2 = supabase.table("live_chat").insert({
                         "owner": "bAIbysitter",
@@ -113,7 +119,7 @@ async def process_transaction(data: TransactionRequest):
                         "timestamp": datetime.utcnow().isoformat()
                     }).execute()
                 
-                logger.info(f"Segundo insert completado: {result2}")
+                logger.info(f"Second insert completed: {result2}")
                 
             except Exception as e:
                 logger.error(f"Error al guardar en Supabase: {e}")

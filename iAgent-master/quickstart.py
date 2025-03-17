@@ -287,25 +287,37 @@ class InjectiveCLI:
     ) -> dict:
         """Make API request with current agent information"""
         try:
+            #print(f"\nDEBUG - Making request to endpoint: {endpoint}")
+            #print(f"DEBUG - Initial data: {data}")
+            
             url = f"{self.api_url.rstrip('/')}/{endpoint.lstrip('/')}"
             headers = {"Content-Type": "application/json", "Accept": "application/json"}
 
-            # Add current agent information to request if available
             current_agent = self.agent_manager.get_current_agent()
+            #print(f"DEBUG - Current agent: {current_agent}")
+
             if current_agent and data:
                 data["agent_key"] = current_agent["private_key"]
                 data["environment"] = self.agent_manager.get_current_network()
                 data["agent_id"] = current_agent["address"]
+                #print(f"DEBUG - Updated request data: {data}")
             else:
+                print("DEBUG - No agent information available")
                 return
+
+            print(f"DEBUG - Sending request to: {url}")
             response = requests.post(
                 url, json=data, params=params, headers=headers, timeout=60
             )
-
+            
+            #print(f"DEBUG - Response status: {response.status_code}")
+            #print(f"DEBUG - Response content: {response.text[:500]}...")  # Primeros 500 caracteres
+            
             response.raise_for_status()
             return response.json()
 
         except requests.exceptions.RequestException as e:
+            #print(f"DEBUG - Request error: {str(e)}")
             raise Exception(f"API request failed: {str(e)}")
 
     def run(self):

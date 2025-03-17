@@ -3,24 +3,74 @@ from injective_functions.base import InjectiveBase
 from typing import Dict, List
 from injective_functions.utils.indexer_requests import fetch_decimal_denoms
 from injective_functions.utils.helpers import detailed_exception_info
+from injective_functions.babysitter.babysitter import TransactionBabysitter
+import inspect
+import aiohttp
 
 
 class InjectiveBank(InjectiveBase):
-    def __init__(self, chain_client) -> None:
-        # Initializes the network and the composer
+    def __init__(self, chain_client, api_url: str = None) -> None:
+        print(f"DEBUG - [InjectiveBank.__init__] Starting initialization")
         super().__init__(chain_client)
+        self.babysitter_url = api_url
+        self.session = aiohttp.ClientSession()
+        self.babysitter = TransactionBabysitter(chain_client, api_url) if api_url else None
+        print(f"DEBUG - [InjectiveBank.__init__] Babysitter status: {self.babysitter is not None}")
+        print(f"DEBUG - [InjectiveBank.__init__] API URL: {api_url}")
 
     async def transfer_funds(
-        self, amount: Decimal, denom: str = None, to_address: str = None
+        self, amount: Decimal, denom: str = None, to_address: str = None, chat_history: list = None
     ) -> Dict:
+        try:
+            current_frame = inspect.currentframe()
+            caller_frame = inspect.getouterframes(current_frame, 2)
+            print(f"DEBUG - [InjectiveBank.transfer_funds] Called by: {caller_frame[1][3]}")
+            print(f"DEBUG - [InjectiveBank.transfer_funds] Arguments:")
+            print(f"  - amount: {amount}")
+            print(f"  - denom: {denom}")
+            print(f"  - to_address: {to_address}")
+            print(f"  - chat_history: {chat_history}")
+            print(f"  - babysitter enabled: {self.babysitter is not None}")
 
-        msg = self.chain_client.composer.MsgSend(
-            from_address=self.chain_client.address.to_acc_bech32(),
-            to_address=str(to_address),
-            amount=float(amount),
-            denom=denom,
-        )
-        return await self.chain_client.build_and_broadcast_tx(msg)
+            if self.babysitter and chat_history is not None:
+                print("DEBUG - [InjectiveBank.transfer_funds] Using babysitter flow")
+                msg = self.chain_client.composer.MsgSend(
+                    from_address=self.chain_client.address.to_acc_bech32(),
+                    to_address=to_address,
+                    amount=float(amount),
+                    denom=denom,
+                )
+                
+                # Filtrar solo los mensajes del usuario
+                user_messages = [msg for msg in chat_history if msg.get("role") == "user"]
+                
+                return await self.babysitter.safe_transfer(
+                    amount=amount,
+                    denom=denom,
+                    to_address=to_address,
+                    chat_history=user_messages  # Enviamos solo los mensajes del usuario
+                )
+            else:
+                print("DEBUG - [InjectiveBank.transfer_funds] Using direct transfer flow")
+                print(f"  - Reason: babysitter={self.babysitter is not None}, chat_history={chat_history is not None}")
+            
+            # Si no hay babysitter, usar la transferencia normal
+            print(f"DEBUG - Transfer attempt:")
+            print(f"DEBUG - From: {self.chain_client.address.to_acc_bech32()}")
+            print(f"DEBUG - To: {to_address}")
+            print(f"DEBUG - Amount: {amount} {denom}")
+            print(f"DEBUG - Network: {self.chain_client.network_type}")
+            
+            msg = self.chain_client.composer.MsgSend(
+                from_address=self.chain_client.address.to_acc_bech32(),
+                to_address=to_address,
+                amount=float(amount),
+                denom=denom,
+            )
+            return await self.chain_client.build_and_broadcast_tx(msg)
+        except Exception as e:
+            print(f"DEBUG - Transfer error: {str(e)}")
+            return {"error": str(e)}
 
     async def query_balances(self, denom_list: List[str] = None) -> Dict:
         try:
