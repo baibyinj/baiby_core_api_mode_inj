@@ -18,7 +18,7 @@ Architecture
 
 ### 2. Monitoring Bots
 
-Currently focused on MultiversX blockchain monitoring:
+Currently focused on injective blockchain monitoring:
 
 - **Balance Monitor:** Detects potential wallet draining attempts
   - Tracks transactions using >90% of wallet balance
@@ -39,7 +39,7 @@ Orchestrates the entire transaction flow:
 
 1. **Initial Reception:**
 
-   - Transaction received from MultiversX wallet
+   - Transaction received from injective wallet
    - Unique hash generated for tracking
    - Transaction details broadcast to monitoring bots
 
@@ -88,8 +88,8 @@ uvicorn app.main:app --reload
 # Launch bAIby agent
 uvicorn baiby_agent.txagent:app --port 8001
 
-# Start MultiversX monitoring bot
-python bots/test_bot_balance_multiversx.py
+# Start injective monitoring bot
+python bots/test_bot_balance_injective.py
 ```
 
 ## Technical Details
@@ -99,7 +99,7 @@ python bots/test_bot_balance_multiversx.py
 - Backend: FastAPI
 - AI: OpenAI GPT-4
 - Database: Supabase
-- Blockchain: MultiversX
+- Blockchain: injective
 - Real-time: WebSockets
 - HTTP Client: HTTPX
 
